@@ -1,17 +1,27 @@
 *.class
 *.log
+*.png
+result/*
+lib/
+
+data/
 
 # sbt specific
-.cache/
-.history/
-.lib/
 dist/*
 target/
+output/
 lib_managed/
+ml-100k/
+data/
 src_managed/
 project/boot/
 project/plugins/project/
 
 # Scala-IDE specific
 .scala_dependencies
-.worksheet
+
+# Intellij
+nohup.out
+.idea/
+*.iml
+*.iws
