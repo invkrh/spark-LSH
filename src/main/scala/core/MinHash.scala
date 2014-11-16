@@ -1,6 +1,7 @@
 package core
 
 import org.apache.commons.math3.primes.Primes
+import org.apache.spark.rdd.RDD
 
 import scala.util.Random
 
@@ -14,17 +15,28 @@ import scala.util.Random
 object MinHash {
   type HashFunction = Int => Int
 
+  def hashFunctionFamily(a: Int, b: Int, uz: Int): HashFunction = {
+    x: Int => (a * x + b) % uz
+  }
+
   def generateHashFunctions(universeSize: Int, number: Int): Array[HashFunction] = {
+
+    val pFactors = Primes.primeFactors(universeSize)
+    val validFactors =
+      for {
+        i <- 1 to universeSize + Random.nextInt(universeSize) if Primes.isPrime(i) && !pFactors.contains(i)
+      } yield i
 
     Array.tabulate(number) {
       i =>
-        val rd = Random.nextInt(number * number)
-        hashFunction(Primes.nextPrime(rd), Random.nextInt(universeSize), universeSize)
+        hashFunctionFamily(validFactors(Random nextInt validFactors.size), Random.nextInt(universeSize), universeSize)
     }
   }
 
-  def hashFunction(a: Int, b: Int, uz: Int): HashFunction = {
-    x: Int => (a * x + b) % uz
+  def run(mtx: RDD[Array[String]], hashFuncs: Array[HashFunction]) = {
+
+
   }
+
 
 }

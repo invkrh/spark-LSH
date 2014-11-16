@@ -1,5 +1,6 @@
 package example
 
+import core.MinHash
 import org.apache.commons.math3.primes.Primes
 
 //import org.apache.commons.math3.primes.Primes
@@ -37,24 +38,32 @@ object SimilarSentences extends App {
     (4, Array("A", "B", "X", "C"))
   ))
 
-  // Test validation function
-
-  //  val s1 = Array("A", "B", "C", "D")
-  //  val s2 = Array("A", "B", "X", "D")
-  //  val s3 = Array("A", "B", "C")
-  //  val s4 = Array("A", "B", "X", "C")
-  //
-  //  println(isValidate(s1, s2))
-  //  println(isValidate(s1, s3))
-  //  println(isValidate(s1, s4))
-  //  println(isValidate(s2, s3))
-  //  println(isValidate(s2, s4))
-  //  println(isValidate(s3, s4))
-
+  val sentences3 = sc.parallelize(Array(
+    (1, Array("A", "C", "D")),
+    (2, Array("B", "C", "E"))
+  ))
 
   // data choice
-  //  val sentences = sentences2
+  val sentences = sentences2
 
   import org.apache.spark.SparkContext._
 
+  val r = 4
+  val dictionary = sentences.values.map(_.zipWithIndex).flatMap(x => x).distinct.sortBy(_._1).collect
+  val bdcv = sc.broadcast(dictionary)
+  val hfs = sc.broadcast(MinHash.generateHashFunctions(dictionary.size, 30))
+  val signatureMtx = sentences.map {
+    case (id, words) =>
+      val universalWords = bdcv.value
+      val oneIndex = words.zipWithIndex.map(p => universalWords.indexOf(p) + 1)
+      val signatures = for {
+        f <- hfs.value
+      } yield (oneIndex map f).min
+      signatures.toList.sliding(r,r).toList
+  }
+
+  signatureMtx.collect foreach println
+
+
+  //  (0 until 6).map(i => hfs.map(_(i)).toList) foreach println
 }
