@@ -1,6 +1,6 @@
 package example
 
-import core.MinHash
+import core.{LSH, IndexedItemSet}
 import org.apache.commons.math3.primes.Primes
 
 //import org.apache.commons.math3.primes.Primes
@@ -46,24 +46,14 @@ object SimilarSentences extends App {
   // data choice
   val sentences = sentences2
 
-  import org.apache.spark.SparkContext._
-
-  val r = 4
-  val dictionary = sentences.values.map(_.zipWithIndex).flatMap(x => x).distinct.sortBy(_._1).collect
-  val bdcv = sc.broadcast(dictionary)
-  val hfs = sc.broadcast(MinHash.generateHashFunctions(dictionary.size, 30))
-  val signatureMtx = sentences.map {
-    case (id, words) =>
-      val universalWords = bdcv.value
-      val oneIndex = words.zipWithIndex.map(p => universalWords.indexOf(p) + 1)
-      val signatures = for {
-        f <- hfs.value
-      } yield (oneIndex map f).min
-      signatures.toList.sliding(r,r).toList
+  val dataSet = sentences.map {
+    case (id, words) => IndexedItemSet(id, words zipWithIndex)
   }
 
-  signatureMtx.collect foreach println
+  val res = new LSH()
+    .setBands(20)
+    .setRows(5)
+    .run(dataSet)
 
-
-  //  (0 until 6).map(i => hfs.map(_(i)).toList) foreach println
+  res foreach println
 }
