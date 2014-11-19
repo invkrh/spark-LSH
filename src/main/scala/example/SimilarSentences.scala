@@ -1,9 +1,6 @@
 package example
 
 import core.{LSH, IndexedItemSet}
-import org.apache.commons.math3.primes.Primes
-
-//import org.apache.commons.math3.primes.Primes
 
 /**
  * Created with IntelliJ IDEA.
@@ -30,7 +27,7 @@ object SimilarSentences extends App {
   //      case Array(id, s@_*) => (id.toInt, s.toArray)
   //    }
   //  } //.filter(_._1 < 100000)
-  //
+
   val sentences2 = sc.parallelize(Array(
     (1, Array("A", "B", "C", "D")),
     (2, Array("A", "B", "X", "D")),

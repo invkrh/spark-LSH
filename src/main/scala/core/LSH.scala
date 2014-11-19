@@ -15,9 +15,22 @@ import scala.util.Random
  * Time: 6:17 PM
  */
 
+
+trait HashFunction
+
+case class MinHashFunction(a: Int, b: Int, uz: Int) extends HashFunction {
+  def apply(x: Int) = (a * x + b) % uz
+}
+
+case class BandHashFunction(seed: Int) extends HashFunction {
+  def apply(x: Array[Int]) = scala.util.hashing.MurmurHash3.arrayHash(x, seed)
+}
+
 case class IndexedItemSet[T](id: Int, elems: Array[T])
 
-class LSH private(private var rows: Int, private var bands: Int) {
+class LSH private
+(private var rows: Int,
+ private var bands: Int) extends Serializable {
 
   def this() = this(5, 20)
 
@@ -31,32 +44,25 @@ class LSH private(private var rows: Int, private var bands: Int) {
     this
   }
 
-
-  def hashFunctionFamily(a: Int, b: Int, uz: Int): Int => Int = {
-    x: Int => (a * x + b) % uz
-  }
-
-  def generateMinHashFunctions(universeSize: Int, number: Int): Array[Int => Int] = {
+  def minHashFunctions(universeSize: Int, number: Int): Array[MinHashFunction] = {
     val pFactors = Primes.primeFactors(universeSize)
     val validFactors = for {
       i <- 1 to universeSize + Random.nextInt(universeSize) if Primes.isPrime(i) && !pFactors.contains(i)
     } yield i
     Array.tabulate(number) {
       i =>
-        hashFunctionFamily(validFactors(Random nextInt validFactors.size), Random.nextInt(universeSize), universeSize)
+        MinHashFunction(validFactors(Random nextInt validFactors.size), Random.nextInt(universeSize), universeSize)
     }
   }
 
-  def generateBandFunction(funcs: Array[Int => Int]) = {
+  def bandHashFunctions() =
     for {
       i <- 0 until bands
-    } yield (xs: Array[Int]) => (xs zip Shuffle(funcs, rows)).map { case (x, f) => f(x)}.sum
-  }
+    } yield BandHashFunction(Random.nextInt)
 
-  def run[T: ClassTag](itemSets: RDD[IndexedItemSet[T]]): RDD[Array[Int]] = {
+  def run[T: ClassTag](itemSets: RDD[IndexedItemSet[T]]) = {
 
     val sparkContext = itemSets.context
-    val numMinHashFunc = bands * rows
 
     val dictionary = itemSets.map(_.elems)
       .flatMap(x => x)
@@ -64,31 +70,28 @@ class LSH private(private var rows: Int, private var bands: Int) {
       //.sortBy(identity) // Sort may be skipped for performance issue
       .collect
 
-    val minHashFunctions = generateMinHashFunctions(dictionary.size, numMinHashFunc)
-    val bandHashFunctions = generateBandFunction(minHashFunctions)
-
     val bdcDict = sparkContext.broadcast(dictionary)
-    val bdcMinHashFunctions = sparkContext.broadcast(minHashFunctions)
+    val bdcMinHashFunctions = sparkContext.broadcast(minHashFunctions(dictionary.size, bands * rows))
     val bdcBandHashFunctions = sparkContext.broadcast(bandHashFunctions)
 
-    val retVal = itemSets.flatMap {
+    itemSets.flatMap {
       case IndexedItemSet(itemId, elems) =>
         val universalWords = bdcDict.value
         val minHash = bdcMinHashFunctions.value
+        val bandFunction = bdcBandHashFunctions.value
         val rowsWithOne = elems.map(p => universalWords.indexOf(p))
         val signatures = for {
           hash <- minHash
-        } yield (rowsWithOne map hash).min
-        val bandFunction = bdcBandHashFunctions.value
-        (signatures.sliding(rows, rows).toArray zipWithIndex).map {
+        } yield (rowsWithOne map hash.apply).min
+
+        signatures.sliding(rows, rows).zipWithIndex
+          .map {
           case (arr, bandId) =>
             val bucketId = bandFunction(bandId)(arr)
             (bandId, bucketId, itemId)
         }
     }.groupBy {
       case (bandId, bucketId, _) => (bandId, bucketId)
-    }.values.map(iter => iter.map(_._3).toArray)
-
-    retVal
+    }.values.map(iter => iter.map(_._3).toList).filter(_.size > 1).distinct
   }
 }
