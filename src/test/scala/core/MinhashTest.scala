@@ -11,7 +11,7 @@ import scala.util.Random
  * Time: 10:31 PM
  */
 
-class PrimeNumberTest extends FlatSpec with Matchers {
+class MinhashTest extends FlatSpec with Matchers {
   "Prime.primeFactors" should "do the prime factore decomposition" in {
     import org.apache.commons.math3.primes.Primes
     val res = Primes.primeFactors(50)

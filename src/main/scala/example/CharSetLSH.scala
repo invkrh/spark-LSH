@@ -9,7 +9,7 @@ import core.{LSH, IndexedSet}
  * Time: 5:48 PM
  */
 
-object SimilarSentences extends App {
+object CharSetLSH extends App {
   /**
    * 9,397,023 sentences
    * 1,350,205 distinct words
@@ -39,11 +39,10 @@ object SimilarSentences extends App {
     (8, Array("A", "B", "X", "D"))
   ))
 
-
   // data choice
 
   val dataSet = charSet.map {
-    case (id, words) => IndexedSet(id, words zipWithIndex)
+    case (id, words) => IndexedSet(id, words.toSet)
   }
 
   val res = new LSH()

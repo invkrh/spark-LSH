@@ -1,6 +1,5 @@
 package core
 
-import org.apache.commons.math3.primes.Primes
 import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkContext._
 
@@ -14,7 +13,7 @@ import scala.util.Random
  * Time: 6:17 PM
  */
 
-case class IndexedSet[T](index: Int, elems: Array[T])
+case class IndexedSet[T](index: Int, elems: Set[T])
 
 class LSH private
 (private var rows: Int,
@@ -33,17 +32,14 @@ class LSH private
   }
 
   def generateMinHashFunctions(universeSize: Int): Array[MinHashFunction] = {
-    val primeFactors = Primes.primeFactors(universeSize)
-
-    // TODO: Find bands * rows prime numbers as a sufficient prime list
 
     /**
      * create a valid prime list by excluding prime factors of universeSize
+     * make sure that each minhash function has a good distribution
      */
-    val validPrimes = for {
-      i <- 1 to bands * rows if Primes.isPrime(i) && !primeFactors.contains(i)
-    } yield i
-    println(validPrimes.toList)
+
+    import utils.Prime
+    val validPrimes = Prime.nonCoPrimeNumbers(universeSize).take(bands * rows).toArray
 
     Array.tabulate(bands * rows) {
       _ =>
