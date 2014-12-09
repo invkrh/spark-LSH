@@ -3,7 +3,6 @@ package core
 import org.apache.commons.math3.primes.Primes
 import org.apache.spark.rdd.RDD
 import org.apache.spark.SparkContext._
-import utils.Shuffle
 
 import scala.reflect.ClassTag
 import scala.util.Random
@@ -15,18 +14,7 @@ import scala.util.Random
  * Time: 6:17 PM
  */
 
-
-trait HashFunction
-
-case class MinHashFunction(a: Int, b: Int, uz: Int) extends HashFunction {
-  def apply(x: Int) = (a * x + b) % uz
-}
-
-case class BandHashFunction(seed: Int) extends HashFunction {
-  def apply(x: Array[Int]) = scala.util.hashing.MurmurHash3.arrayHash(x, seed)
-}
-
-case class IndexedItemSet[T](id: Int, elems: Array[T])
+case class IndexedSet[T](index: Int, elems: Array[T])
 
 class LSH private
 (private var rows: Int,
@@ -44,23 +32,34 @@ class LSH private
     this
   }
 
-  def minHashFunctions(universeSize: Int, number: Int): Array[MinHashFunction] = {
-    val pFactors = Primes.primeFactors(universeSize)
-    val validFactors = for {
-      i <- 1 to universeSize + Random.nextInt(universeSize) if Primes.isPrime(i) && !pFactors.contains(i)
+  def generateMinHashFunctions(universeSize: Int): Array[MinHashFunction] = {
+    val primeFactors = Primes.primeFactors(universeSize)
+
+    // TODO: Find bands * rows prime numbers as a sufficient prime list
+
+    /**
+     * create a valid prime list by excluding prime factors of universeSize
+     */
+    val validPrimes = for {
+      i <- 1 to bands * rows if Primes.isPrime(i) && !primeFactors.contains(i)
     } yield i
-    Array.tabulate(number) {
-      i =>
-        MinHashFunction(validFactors(Random nextInt validFactors.size), Random.nextInt(universeSize), universeSize)
+    println(validPrimes.toList)
+
+    Array.tabulate(bands * rows) {
+      _ =>
+        MinHashFunction(
+          validPrimes(Random.nextInt(validPrimes.size)),
+          Random.nextInt(universeSize),
+          universeSize)
     }
   }
 
-  def bandHashFunctions() =
+  def generateBandHashFunctions() =
     for {
       i <- 0 until bands
     } yield BandHashFunction(Random.nextInt)
 
-  def run[T: ClassTag](itemSets: RDD[IndexedItemSet[T]]) = {
+  def run[T: ClassTag](itemSets: RDD[IndexedSet[T]]) = {
 
     val sparkContext = itemSets.context
 
@@ -70,25 +69,30 @@ class LSH private
       //.sortBy(identity) // Sort may be skipped for performance issue
       .collect
 
-    val bdcDict = sparkContext.broadcast(dictionary)
-    val bdcMinHashFunctions = sparkContext.broadcast(minHashFunctions(dictionary.size, bands * rows))
-    val bdcBandHashFunctions = sparkContext.broadcast(bandHashFunctions)
+    println("dictionary.size = " + dictionary.size)
+
+    val bdcUniversalSet = sparkContext.broadcast(dictionary)
+    val bdcMinHashFunctions = sparkContext.broadcast(generateMinHashFunctions(dictionary.size))
+    val bdcBandHashFunctions = sparkContext.broadcast(generateBandHashFunctions)
 
     itemSets.flatMap {
-      case IndexedItemSet(itemId, elems) =>
-        val universalWords = bdcDict.value
-        val minHash = bdcMinHashFunctions.value
-        val bandFunction = bdcBandHashFunctions.value
-        val rowsWithOne = elems.map(p => universalWords.indexOf(p))
+      case IndexedSet(id, set) =>
+
+        val universalSet = bdcUniversalSet.value
+        val minHashFuncs = bdcMinHashFunctions.value
+        val bandHashFuncs = bdcBandHashFunctions.value
+
+        val elemIndexInUniversalSet = set.map(p => universalSet.indexOf(p))
+
         val signatures = for {
-          hash <- minHash
-        } yield (rowsWithOne map hash.apply).min
+          hash <- minHashFuncs
+        } yield (elemIndexInUniversalSet map hash.apply).min
 
         signatures.sliding(rows, rows).zipWithIndex
           .map {
           case (arr, bandId) =>
-            val bucketId = bandFunction(bandId)(arr)
-            (bandId, bucketId, itemId)
+            val bucketId = bandHashFuncs(bandId)(arr)
+            (bandId, bucketId, id)
         }
     }.groupBy {
       case (bandId, bucketId, _) => (bandId, bucketId)

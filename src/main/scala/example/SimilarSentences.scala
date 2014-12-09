@@ -1,6 +1,6 @@
 package example
 
-import core.{LSH, IndexedItemSet}
+import core.{LSH, IndexedSet}
 
 /**
  * Created with IntelliJ IDEA.
@@ -28,23 +28,22 @@ object SimilarSentences extends App {
   //    }
   //  } //.filter(_._1 < 100000)
 
-  val sentences2 = sc.parallelize(Array(
+  val charSet = sc.parallelize(Array(
     (1, Array("A", "B", "C", "D")),
     (2, Array("A", "B", "X", "D")),
-    (3, Array("A", "B", "C")),
-    (4, Array("A", "B", "X", "C"))
+    (3, Array("N", "D", "F")),
+    (4, Array("Y", "E", "G", "V")),
+    (5, Array("Z", "X", "V")),
+    (6, Array("V", "X", "Z")),
+    (7, Array("A", "B", "C", "D")),
+    (8, Array("A", "B", "X", "D"))
   ))
 
-  val sentences3 = sc.parallelize(Array(
-    (1, Array("A", "C", "D")),
-    (2, Array("B", "C", "E"))
-  ))
 
   // data choice
-  val sentences = sentences2
 
-  val dataSet = sentences.map {
-    case (id, words) => IndexedItemSet(id, words zipWithIndex)
+  val dataSet = charSet.map {
+    case (id, words) => IndexedSet(id, words zipWithIndex)
   }
 
   val res = new LSH()
@@ -52,5 +51,5 @@ object SimilarSentences extends App {
     .setRows(5)
     .run(dataSet)
 
-  res foreach println
+  res.collect foreach println
 }
