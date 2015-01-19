@@ -9,8 +9,8 @@ package core
 
 trait HashFunction
 
-case class MinHashFunction(a: Int, b: Int, univSize: Int) extends HashFunction {
-  def apply(x: Int) = (a * x + b) % univSize
+case class MinHashFunction(a: Int, b: Int, n: Int) extends HashFunction {
+  def apply(x: Int) = (a * x + b) % n
 }
 
 case class BandHashFunction(seed: Int) extends HashFunction {

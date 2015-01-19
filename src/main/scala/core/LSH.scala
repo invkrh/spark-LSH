@@ -38,15 +38,15 @@ class LSH private
      * make sure that each minhash function has a good distribution
      */
 
-    import utils.Prime
-    val validPrimes = Prime.nonCoPrimeNumbers(universeSize).take(bands * rows).toArray
+    import org.apache.commons.math3.primes.Primes
+    val primeNumber = Primes.nextPrime(universeSize)
 
     Array.tabulate(bands * rows) {
       _ =>
         MinHashFunction(
-          validPrimes(Random.nextInt(validPrimes.size)),
-          Random.nextInt(universeSize),
-          universeSize)
+          a = Random.nextInt(primeNumber),
+          b = Random.nextInt(universeSize),
+          primeNumber)
     }
   }
 

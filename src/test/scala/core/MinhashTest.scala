@@ -12,16 +12,12 @@ import scala.util.Random
  */
 
 class MinhashTest extends FlatSpec with Matchers {
-  "Prime.primeFactors" should "do the prime factore decomposition" in {
-    import org.apache.commons.math3.primes.Primes
-    val res = Primes.primeFactors(50)
-    println(res)
-  }
-
   "co-prime numbers" should "give a better hash distribution" in {
+
     /**
      * a and mod should be co-prime number
      */
+
     val a = 9
     val mod = 16
     val b = Random.nextInt(mod)
@@ -33,7 +29,7 @@ class MinhashTest extends FlatSpec with Matchers {
       i <- 0 until mod
     } yield func(i)
 
-    dist foreach println
+    //    dist foreach println
 
     dist.distinct.size shouldBe mod
   }
