@@ -1,4 +1,4 @@
-package example
+package com.github.invkrh.example
 
 /**
  * Created with IntelliJ IDEA.
@@ -8,7 +8,7 @@ package example
  */
 
 import org.scalatest._
-import example.SentenceValidation._
+import com.github.invkrh.example.SentenceValidation._
 
 class SentenceValidationTest extends FlatSpec with Matchers {
 

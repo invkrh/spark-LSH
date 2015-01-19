@@ -1,4 +1,4 @@
-package core
+package com.github.invkrh.core
 
 /**
  * Created with IntelliJ IDEA.

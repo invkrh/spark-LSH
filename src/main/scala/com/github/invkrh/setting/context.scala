@@ -1,4 +1,4 @@
-package setting
+package com.github.invkrh.setting
 
 import org.apache.spark.{SparkConf, SparkContext}
 

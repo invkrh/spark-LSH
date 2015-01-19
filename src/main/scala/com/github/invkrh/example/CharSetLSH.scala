@@ -1,6 +1,6 @@
-package example
+package com.github.invkrh.example
 
-import core.{LSH, IndexedSet}
+import com.github.invkrh.core.{LSH, IndexedSet}
 
 /**
  * Created with IntelliJ IDEA.
@@ -20,7 +20,7 @@ object CharSetLSH extends App {
    * 30 Integers in size per sentence
    */
 
-  import setting.context._
+  import com.github.invkrh.setting.context._
 
   //  val sentences1 = sc.textFile("data/sentences.txt", 20).map {
   //    str => str.split(" ") match {

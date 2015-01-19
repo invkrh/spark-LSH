@@ -1,4 +1,4 @@
-package core
+package com.github.invkrh.core
 
 import org.scalatest.{Matchers, FlatSpec}
 

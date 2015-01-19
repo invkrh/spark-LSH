@@ -1,4 +1,4 @@
-package utils
+package com.github.invkrh.utils
 
 import org.apache.commons.math3.primes.Primes
 

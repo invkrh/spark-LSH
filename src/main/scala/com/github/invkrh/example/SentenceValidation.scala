@@ -1,4 +1,4 @@
-package example
+package com.github.invkrh.example
 
 /**
  * Created with IntelliJ IDEA.

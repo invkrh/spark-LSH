@@ -1,4 +1,4 @@
-package utils
+package com.github.invkrh.utils
 
 /**
  * Created with IntelliJ IDEA.
