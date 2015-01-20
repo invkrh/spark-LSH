@@ -84,7 +84,7 @@ class LSH private
           hash <- minHashFuncs
         } yield (elemIndexInUniversalSet map hash.apply).min
 
-        signatures.sliding(rows, rows).zipWithIndex
+        signatures.grouped(rows).zipWithIndex
           .map {
           case (arr, bandId) =>
             val bucketId = bandHashFuncs(bandId)(arr)
